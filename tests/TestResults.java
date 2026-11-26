@@ -73,7 +73,33 @@ public class TestResults {
         check(Files.exists(Path.of("rider_statement.csv")),
               "Rider statement exists");
 
-        System.out.println("----------------------");
+        // BR-03: Credit expiry checks
+String txn0226 = rows.stream()
+    .filter(s -> s.contains("TXN-0226,"))
+    .findFirst().orElse("");
+
+String txn0250 = rows.stream()
+    .filter(s -> s.contains("TXN-0250,"))
+    .findFirst().orElse("");
+
+check(!txn0226.isEmpty() && txn0226.split(",", -1)[7].equals("CREDIT"),
+      "BR-03: Credit valid on expiry date");
+
+check(!txn0250.isEmpty() && txn0250.split(",", -1)[7].equals("WALLET"),
+      "BR-03: Expired credit not used");
+
+// BR-05: Grade B damage checks
+String gradeB = rows.stream()
+    .filter(s -> s.startsWith("TXN-0086,"))
+    .findFirst().orElse("");
+
+String[] damageFields = gradeB.split(",", -1);
+
+check(damageFields.length > 10
+      && damageFields[9].equals("200.00")
+      && damageFields[10].equals("36.00"),
+      "BR-05: Grade B damage charge and GST");
+      System.out.println("----------------------");
         System.out.println("ALL " + passed + " TESTS PASSED");
     }
 }
