@@ -46,10 +46,10 @@ public class Main {
                 } else {
                     price=money("150.00").subtract(money(soc).multiply(new BigDecimal("1.20"))).max(new BigDecimal("40.00")).setScale(2,RoundingMode.HALF_UP);
                     if(grade.equals("B")){damage=new BigDecimal("200.00");damageGst=damage.multiply(GST).setScale(2,RoundingMode.HALF_UP);}
-                    boolean credit=useCredit(rid,day)==1;
+                    boolean credit=validCredits(rid,day)>0;
                     BigDecimal total=price.add(price.multiply(GST).setScale(2,RoundingMode.HALF_UP)).add(damage).add(damageGst);
-                    if(!credit&&r.wallet.compareTo(total)<0){status="DECLINED";reason="INSUFFICIENT_BALANCE";price=ZERO;damage=ZERO;damageGst=ZERO;}
-                    else {if(credit){paid="CREDIT";swapGst=ZERO;redeemed.merge(key(date,sid),1,Integer::sum);}else{paid="WALLET";swapGst=price.multiply(GST).setScale(2,RoundingMode.HALF_UP);r.wallet=r.wallet.subtract(total);revenue.merge(key(date,sid),total,BigDecimal::add);}if(hasReturn){Pack old=packs.get(ret);r.held.remove(ret);old.location=sid;old.soc=Integer.parseInt(soc);old.issued=null;r.overdue=r.overdue.add(overdue);deposits.remove(rid+"|"+ret);}if(!issue.equals("NONE")){Pack np=packs.get(issue);np.location=rid;np.soc=-1;np.issued=t.time;r.held.add(issue);deposits.put(rid+"|"+issue,depLeft.signum()>0?depLeft:DEPOSIT);}r.swaps++;}
+                   if(r.wallet.compareTo(credit?damage.add(damageGst):total)<0){status="DECLINED";reason="INSUFFICIENT_BALANCE";price=ZERO;damage=ZERO;damageGst=ZERO;}
+                    else {if(credit){useCredit(rid,day);paid="CREDIT";swapGst=ZERO;redeemed.merge(key(date,sid),1,Integer::sum);if(damage.add(damageGst).compareTo(ZERO)>0){r.wallet=r.wallet.subtract(damage.add(damageGst));revenue.merge(key(date,sid),damage.add(damageGst),BigDecimal::add);}}else{paid="WALLET";swapGst=price.multiply(GST).setScale(2,RoundingMode.HALF_UP);r.wallet=r.wallet.subtract(total);revenue.merge(key(date,sid),total,BigDecimal::add);}if(hasReturn){Pack old=packs.get(ret);r.held.remove(ret);old.location=sid;old.soc=Integer.parseInt(soc);old.issued=null;r.overdue=r.overdue.add(overdue);deposits.remove(rid+"|"+ret);}if(!issue.equals("NONE")){Pack np=packs.get(issue);np.location=rid;np.soc=-1;np.issued=t.time;r.held.add(issue);deposits.put(rid+"|"+issue,depLeft.signum()>0?depLeft:DEPOSIT);}r.swaps++;}
                 }
             }
         }
