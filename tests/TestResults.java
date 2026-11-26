@@ -87,7 +87,42 @@ check(!txn0226.isEmpty() && txn0226.split(",", -1)[7].equals("CREDIT"),
 
 check(!txn0250.isEmpty() && txn0250.split(",", -1)[7].equals("WALLET"),
       "BR-03: Expired credit not used");
+// BR-01: Swap price checks
+String txn0082 = rows.stream()
+    .filter(s -> s.startsWith("TXN-0082,"))
+    .findFirst().orElse("");
 
+String txn0084 = rows.stream()
+    .filter(s -> s.startsWith("TXN-0084,"))
+    .findFirst().orElse("");
+
+check(!txn0082.isEmpty() && txn0082.split(",", -1)[6].equals("40.00"),
+      "BR-01: Minimum swap price is 40");
+
+check(!txn0084.isEmpty() && txn0084.split(",", -1)[6].equals("40.80"),
+      "BR-01: Swap price calculation");
+// BR-02: Reject battery packs below 90% SoC
+List<String> inputRows =
+    Files.readAllLines(Path.of("data/transactions.csv"));
+
+String[] lowSocIds = {"TXN-0002", "TXN-0003", "TXN-0004"};
+
+for (String id : lowSocIds) {
+    String input = inputRows.stream()
+        .filter(s -> s.startsWith(id + ","))
+        .findFirst().orElse("");
+
+    String output = rows.stream()
+        .filter(s -> s.startsWith(id + ","))
+        .findFirst().orElse("");
+
+    check(!input.isEmpty()
+        && Integer.parseInt(input.split(",", -1)[6]) < 90
+        && !output.isEmpty()
+        && output.split(",", -1)[4].equals("DECLINED")
+        && output.split(",", -1)[5].equals("NO_CHARGED_PACK"),
+        "BR-02: Reject low-SoC pack " + id);
+}
 // BR-05: Grade B damage checks
 String gradeB = rows.stream()
     .filter(s -> s.startsWith("TXN-0086,"))
