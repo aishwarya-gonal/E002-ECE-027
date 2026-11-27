@@ -123,7 +123,25 @@ for (String id : lowSocIds) {
         && output.split(",", -1)[5].equals("NO_CHARGED_PACK"),
         "BR-02: Reject low-SoC pack " + id);
 }
-// BR-05: Grade B damage checks
+// BR-04: Maximum two battery packs per rider
+check(rows.stream().anyMatch(row -> {
+    String[] f = row.split(",", -1);
+    return f.length >= 6 &&
+           f[0].equals("TXN-0200") &&
+           f[1].equals("RDR-051") &&
+           f[4].equals("DECLINED") &&
+           f[5].equals("PACK_LIMIT");
+}), "BR-04: TXN-0200 declined");
+
+check(rows.stream().anyMatch(row -> {
+    String[] f = row.split(",", -1);
+    return f.length >= 6 &&
+           f[0].equals("TXN-0483") &&
+           f[1].equals("RDR-048") &&
+           f[4].equals("DECLINED") &&
+           f[5].equals("PACK_LIMIT");
+}), "BR-04: TXN-0483 declined");
+        // BR-05: Grade B damage checks
 String gradeB = rows.stream()
     .filter(s -> s.startsWith("TXN-0086,"))
     .findFirst().orElse("");
@@ -134,6 +152,72 @@ check(damageFields.length > 10
       && damageFields[9].equals("200.00")
       && damageFields[10].equals("36.00"),
       "BR-05: Grade B damage charge and GST");
+
+      // BR-06: Overdue charge checks
+String[][] overdueTests = {
+    {"TXN-0106", "50.00"},
+    {"TXN-0112", "150.00"},
+    {"TXN-0190", "100.00"},
+    {"TXN-0218", "250.00"},
+    {"TXN-0223", "2000.00"},
+    {"TXN-0427", "150.00"}
+};
+
+for (String[] test : overdueTests) {
+    check(rows.stream().anyMatch(row -> {
+        String[] f = row.split(",", -1);
+        return f[0].equals(test[0]) && f[11].equals(test[1]);
+    }), "BR-06: " + test[0] + " overdue charge");
+}
+// BR-07: GST checks
+String[][] gstTests = {
+    {"TXN-0001", "WALLET", "23.33"},
+    {"TXN-0006", "WALLET", "24.19"},
+    {"TXN-0007", "WALLET", "24.62"},
+    {"TXN-0005", "CREDIT", "0.00"},
+    {"TXN-0009", "CREDIT", "0.00"},
+    {"TXN-0023", "CREDIT", "0.00"}
+};
+
+for (String[] test : gstTests) {
+    check(rows.stream().anyMatch(row -> {
+        String[] f = row.split(",", -1);
+        return f[0].equals(test[0])
+            && f[7].equals(test[1])
+            && f[8].equals(test[2]);
+    }), "BR-07: GST check " + test[0]);
+}
+
+String[][] damageGstTests = {
+    {"TXN-0086", "36.00"},
+    {"TXN-0090", "36.00"},
+    {"TXN-0142", "36.00"}
+};
+
+for (String[] test : damageGstTests) {
+    check(rows.stream().anyMatch(row -> {
+        String[] f = row.split(",", -1);
+        return f[0].equals(test[0]) && f[10].equals(test[1]);
+    }), "BR-07: Damage GST check " + test[0]);
+}
+// BR-08: Wallet balance checks
+String[] insufficientIds = {
+    "TXN-0085", "TXN-0185", "TXN-0310", "TXN-0427"
+};
+
+for (String id : insufficientIds) {
+    check(rows.stream().anyMatch(row -> {
+        String[] f = row.split(",", -1);
+        return f[0].equals(id)
+            && f[4].equals("DECLINED")
+            && f[5].equals("INSUFFICIENT_BALANCE");
+    }), "BR-08: Insufficient balance " + id);
+}
+
+check(rows.stream().skip(1).allMatch(row -> {
+    String[] f = row.split(",", -1);
+    return Double.parseDouble(f[14]) >= 0;
+}), "BR-08: Wallet never goes negative");
       System.out.println("----------------------");
         System.out.println("ALL " + passed + " TESTS PASSED");
     }
