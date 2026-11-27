@@ -66,3 +66,11 @@ java -cp src Main
 Project Objective
 
 To develop a reliable command-line engine that manages e-scooter battery swapping, pricing, deposits, rider credits and transaction reporting according to eight defined business rules.
+
+## How to Run Tests
+
+Run these commands from the project root directory:
+
+```bash
+javac -cp src -d . tests/TestResults.java
+java -cp . tests.TestResults
