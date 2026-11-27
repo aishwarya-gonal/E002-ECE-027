@@ -74,3 +74,7 @@ Run these commands from the project root directory:
 ```bash
 javac -cp src -d . tests/TestResults.java
 java -cp . tests.TestResults
+
+## Demo Video
+
+[Watch the 5-Minute Capstone Demo](https://drive.google.com/file/d/1wY8c8bheTQL5irDLO7C5OqqmYOsFMRQa/view?usp=drivesdk)
